@@ -1,6 +1,6 @@
 ---
 title: "Class 11 - Structural Bioinformatics (Pt. 1)"
-author: "Anita Wang"
+author: "Anita Wang (PID: A15567878)"
 date: "11/2/2021"
 output: html_document
 ---
