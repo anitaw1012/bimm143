@@ -1,8 +1,10 @@
 ---
 title: "Class 11 - Structural Bioinformatics (Pt. 1)"
-author: "Anita Wang (PID: A15567878)"
+author: 'Anita Wang (PID: A15567878)'
 date: "11/2/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 >1: Introduction to the RCSB Protein Data Bank (PDB)
@@ -47,16 +49,19 @@ round((db$Total/method.sums["Total"]) * 100, 2)
 
 >Q4: Water molecules normally have 3 atoms. Why do we see just one atom per water molecule in this structure?
 
-- 
+- Skipped per in-class instructions  
 
 >Q5: There is a conserved water molecule in the binding site. Can you identify this water molecule? What residue number does this water molecule have (see note below)?
 
-
+- Skipped per in-class instructions 
 
 ## VMD Structure visualization image
 
-![](vmdscene.png)
+```{r}
+#![](vmdscene.png)
+```
 
+Rmd will not knit with the insertion of this picture as a png file.. 
 
 > 3. Introduction to Bio3D in R
 

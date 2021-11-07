@@ -2,7 +2,9 @@
 title: 'Class 12: Structural Bioinformatics II'
 author: 'Anita Wang (PID: A15567878)'
 date: "11/4/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 > 4. Comparative structure analysis of Adenylate Kinase
@@ -33,8 +35,12 @@ mktrj(modes, file = "nma.pdb")
 
 We can now open up this new file in VMD. Changing the coloring method to index and drawing method to tube, we can visualize the protein. Clicking the play button the in lower right hand corner of VMD Main let's the movie play and the protein move. 
 
-![](nma.pdb.movie.png)
 
+```{r}
+#![](nma.pdb.movie.png)
+```
+
+Rmd will not knit with the insertion of png image so I put it as a comment in a code chunk...
 
 **Overview**
 
@@ -101,7 +107,7 @@ We can now use function get.pdb() and pdbslit() to fetch and parse the identifie
 
 ```{r}
 # Download releated PDB files
-#files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
+files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
 ```
 
 ^ Takes hits files and makes a directory ("pdbs") and puts it there -- like manually going and downloading all pdb files from the pdb data base and compiling it all into a single file. 
@@ -156,7 +162,12 @@ pc1 <- mktrj(pc.xray, pc=1, file="pc_1.pdb")
 
 ^Can open up the file and view in VMD, same as before 
 
-![](pc.1.movie.png)
+
+```{r}
+#![](pc.1.movie.png)
+```
+
+Rmd will not knit with the insertion of png image so I put it as a comment in a code chunk...
 
 
 Function rmsd() will calculate all pairwise RMSD values of the structural ensemble. This facilitates clustering analysis based on the pairwise structural deviation:
