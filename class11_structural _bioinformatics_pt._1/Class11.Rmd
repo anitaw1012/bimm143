@@ -63,6 +63,10 @@ round((db$Total/method.sums["Total"]) * 100, 2)
 
 Rmd will not knit with the insertion of this picture as a png file.. 
 
+>Q6: As you have hopefully observed HIV protease is a homodimer (i.e. it is composed of two identical chains). With the aid of the graphic display and the sequence viewer extension can you identify secondary structure elements that are likely to only form in the dimer rather than the monomer?
+
+- OPTIONAL per class 11 lab page
+
 > 3. Introduction to Bio3D in R
 
 ```{r}
