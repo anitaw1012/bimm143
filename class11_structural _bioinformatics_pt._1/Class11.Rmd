@@ -49,11 +49,11 @@ round((db$Total/method.sums["Total"]) * 100, 2)
 
 >Q4: Water molecules normally have 3 atoms. Why do we see just one atom per water molecule in this structure?
 
-- Skipped per in-class instructions  
+- We only see just one atom per water molecule because the VMD application/viewer only displays the oxygen atom of each water molecule. 
 
 >Q5: There is a conserved water molecule in the binding site. Can you identify this water molecule? What residue number does this water molecule have (see note below)?
 
-- Skipped per in-class instructions 
+- This water molecule binds at the MK1 binding site and has residue number HOH308:O.
 
 ## VMD Structure visualization image
 
@@ -61,11 +61,11 @@ round((db$Total/method.sums["Total"]) * 100, 2)
 #![](vmdscene.png)
 ```
 
-Rmd will not knit with the insertion of this picture as a png file.. 
+Rmd will not knit with the insertion of this picture as a png file so I inserted it as a code chunk.... 
 
 >Q6: As you have hopefully observed HIV protease is a homodimer (i.e. it is composed of two identical chains). With the aid of the graphic display and the sequence viewer extension can you identify secondary structure elements that are likely to only form in the dimer rather than the monomer?
 
-- OPTIONAL per class 11 lab page
+- Isolated bridges are likely to only form in the dimer rather than the monomer.
 
 > 3. Introduction to Bio3D in R
 
