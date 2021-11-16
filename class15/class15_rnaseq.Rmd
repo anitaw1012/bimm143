@@ -1,0 +1,340 @@
+---
+title: "Class 15 Transcriptomics and the analysis of RNA-Seq data"
+author: 'Anita Wang (PID: A15567878)'
+date: "11/16/2021"
+output: html_document
+---
+
+#Background 
+Our data for this hands-on session comes from a published RNA-seq experiment where airway smooth muscle cells were treated with dexamethasone, a synthetic glucocorticoid steroid with anti-inflammatory effects (Himes et al. 2014).
+
+2. Import countData and colData
+
+Read the countData and colData
+
+```{r}
+counts <- read.csv("airway_scaledcounts.csv", row.names=1)
+metadata <- read.csv("airway_metadata.csv")
+```
+
+Let's have a look at these 
+
+```{r}
+head(counts)
+```
+
+```{r}
+metadata
+```
+
+>Q1. How many genes are in this dataset? 
+
+```{r}
+nrow(counts)
+```
+
+- 38694 genes
+
+>Q2. How many ‘control’ cell lines do we have?
+
+```{r}
+sum(metadata$dex == "control")
+```
+
+- There are 4 control cell lines
+
+
+#3. Toy differential gene expression
+
+Lets perform some exploratory differential gene expression analysis. Note: this analysis is for demonstration only. NEVER do differential expression analysis this way!
+
+Let's develop a bit of code that will first find the sample id for those labeled control and then calculate the mean counts per gene across these samples:
+
+First I need to extract all the "control" columns. Then I will take the row wise mean to get the average count values for all genes in these four experiments. 
+
+```{r}
+control.inds <- metadata$dex == "control"
+control.counts <- counts[ , control.inds]
+head(control.counts)
+```
+
+```{r}
+control.mean <- rowMeans(control.counts)
+```
+
+
+>Q3. How would you make the above code in either approach more robust?
+
+- You should use rowMenas() instead of rowSums() + dividing by 4 because what if the dataset were updated? If the dataset were updated to have more than 4 control groups, the written code using rowSums() would prove not robust and would not work. 
+
+>Q4. Follow the same procedure for the treated samples (i.e. calculate the mean per gene across drug treated samples and assign to a labeled vector called treated.mean)
+
+Now do the same for the drug treated experiments (i.e. columns)
+
+```{r}
+treated.inds <- metadata$dex == "treated"
+treated.counts <- counts[ , treated.inds]
+head(treated.counts)
+treated.mean <- rowMeans(treated.counts)
+```
+
+We will combine our meancount data for bookkeeping purposes.
+
+```{r}
+meancounts <- data.frame(control.mean, treated.mean)
+```
+
+
+Now show the sum of the mean counts across all genes for each group:
+
+```{r}
+colSums(meancounts)
+```
+
+>Q5 (a). Create a scatter plot showing the mean of the treated samples against the mean of the control samples. Your plot should look something like the following.
+
+```{r}
+plot(meancounts)
+```
+
+
+>Q5 (b).You could also use the ggplot2 package to make this figure producing the plot below. What geom_?() function would you use for this plot?
+
+- You would use `geom_point()`
+
+Wait a sec. There are 60,000-some rows in this data, but I’m only seeing a few dozen dots at most outside of the big clump around the origin.
+
+This plot indicates that we need to transform our data!
+
+>Q6. Try plotting both axes on a log scale. What is the argument to plot() that allows you to do this? 
+
+```{r}
+plot(meancounts, log = "xy")
+```
+
+We often use log2 in this field because it has nice math properties that make interpretation easier.
+
+Ex: if log2(somenumber)=0, this means that theres no change. Thus deviations from 0 indicate change (either positive or negative)
+
+```{r}
+log2(10/10)
+log2(20/10)
+log2(40/10)
+log2(5/10)
+```
+
+We see 0 values for no change and + values for increases and - values for decreases.This nice property leads us to work with **log2(fold-change)** all the time in the genomics and proteomics field.
+
+Let's add the **log2(fold-change)** values to our `meancounts` dataframe. 
+
+We can find candidate differentially expressed genes by looking for genes with a large change between control and dex-treated samples. We usually look at the log2 of the fold change, because this has better mathematical properties.
+
+Here we calculate log2foldchange, add it to our meancounts data.frame and inspect the results either with the head() or the View() function for example.
+
+```{r}
+meancounts$log2fc <- log2(meancounts[,"treated.mean"]/
+                            meancounts[,"control.mean"])
+head(meancounts)
+```
+
+There are a couple of “weird” results. Namely, the NaN (“not a number”) and -Inf (negative infinity) results.
+
+The NaN is returned when you divide by zero and try to take the log. The -Inf is returned when you try to take the log of zero. It turns out that there are a lot of genes with zero expression. Let’s filter our data to remove these genes. Again inspect your result (and the intermediate steps) to see if things make sense to you
+
+Let's just **exclude** these weird values for genes (i.e. rows) that we can't say anything about since we have no data for them: 
+
+```{r}
+zero.vals <- which(meancounts[,1:2]==0, arr.ind=TRUE)
+
+to.rm <- unique(zero.vals[,1])
+mycounts <- meancounts[-to.rm,]
+head(mycounts)
+```
+
+>Q7. What is the purpose of the arr.ind argument in the which() function call above? Why would we then take the first column of the output and need to call the unique() function?
+
+- The arr.ind argument, when set to TRUE, returns array indices (positions) of where x is in the array (in the table). The `arr.ind=TRUE` argument gets the columns and rows where the TRUE values are (i.e. the zero counts in our case) 
+
+- We then take the first column of the output and call the unique() function because we would like to ensure that we aren't double-counting any row
+
+A common threshold used for calling something differentially expressed is a log2(FoldChange) of greater than 2 or less than -2. Let’s filter the dataset both ways to see how many genes are up or down-regulated.
+
+
+```{r}
+up.ind <- mycounts$log2fc > 2
+down.ind <- mycounts$log2fc < (-2)
+```
+
+>Q8. Using the up.ind vector above can you determine how many up regulated genes we have at the greater than 2 fc level?
+
+```{r}
+sum(up.ind)
+```
+
+- There are 250 up-regulated genes at the greater than 2fc level
+
+>Q9. Using the down.ind vector above can you determine how many down regulated genes we have at the greater than 2 fc level?
+
+```{r}
+sum(down.ind)
+```
+
+There are 367 down-regulated genes at the greater than 2 fc level
+
+>Q10. Do you trust these results? Why or why not?
+
+- No. We're missing statistical analyses to help us ensure that the fold changes are significant. Even large fold-changes are not necessarily statistically significant. Thus, these current results may be misleading and inaccurate. 
+
+- We need to utilize the DESeq2 package in order to properly perform analysis. 
+
+#4. DESeq2 analysis -- ADDING THE STATISTICS
+
+Let’s do this the right way. DESeq2 is an R package specifically for analyzing count-based NGS data like RNA-seq. 
+
+```{r}
+library(DESeq2)
+citation("DESeq2")
+```
+
+*Importing data*
+
+DESeq works on a particular type of object called a DESeqDataSet. 
+
+The DESeqDataSet is a single object that contains input values, intermediate calculations like how things are normalized, and all results of a differential expression analysis.
+
+You can construct a DESeqDataSet from (1) a count matrix, (2) a metadata file, and (3) a formula indicating the design of the experiment.
+
+(3): tells DESeq2 which columns in the sample information table (colData) specify the experimental design (i.e. which groups the samples belong to) and how these factors should be used in the analysis. Essentially, this formula expresses how the counts for each gene depend on the variables in colData.
+
+Take a look at metadata again. The thing we’re interested in is the dex column, which tells us which samples are treated with dexamethasone versus which samples are untreated controls. We’ll specify the design with a tilde, like this: design=~dex. 
+
+Use the DESeqDataSetFromMatrix() function to build the required DESeqDataSet object and call it dds, short for our DESeqDataSet:
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData=counts, 
+                              colData=metadata, 
+                              design=~dex)
+dds
+```
+
+*DESeq analysis*
+
+Let’s run the DESeq analysis pipeline on the dataset, and reassign the resulting object back to the same variable. Note that before we start, dds is a bare-bones DESeqDataSet. The DESeq() function takes a DESeqDataSet and returns a DESeqDataSet, but with additional information filled in (including the differential expression results we are after). Notice how if we try to access these results before running the analysis, nothing exists.
+
+Now we can run DESeq analysis:
+
+```{r}
+dds <- DESeq(dds)
+```
+
+*Getting results*
+
+Since we’ve got a fairly simple design (single factor, two groups, treated versus control), we can get results out of the object simply by calling the results() function on the DESeqDataSet that has been run through the pipeline. 
+
+```{r}
+res <- results(dds)
+head(res)
+```
+
+Convert the res object to a data.frame with the as.data.frame() function and then pass it to View() to bring it up in a data viewer:
+
+```{r}
+dat.fr.res <- as.data.frame(res)
+View(dat.fr.res)
+```
+
+Now summarize some basic tallies using the summary function:
+
+
+```{r}
+summary(res)
+```
+
+The results function contains a number of arguments to customize the results table. By default the argument alpha is set to 0.1. If the adjusted p value cutoff will be a value other than 0.1, alpha should be set to that value:
+
+```{r}
+res05 <- results(dds, alpha=0.05)
+summary(res05)
+```
+
+
+#6. Data Visualization
+
+*Volcano Plots*
+
+Let’s make a commonly produced visualization from this data, namely a so-called Volcano plot. These summary figures are frequently used to highlight the proportion of genes that are both significantly regulated and display a high fold change.
+
+```{r}
+plot(res$log2FoldChange, res$padj)
+```
+
+This plot isn't too useful as all the small p-values are hidden at the bottom of the plot and we can't really see them. Taking the log will help.
+
+Lets improve it:
+
+```{r}
+plot( res$log2FoldChange,log(res$padj))
+```
+
+And some more:
+
+We can flip this p-value axis by adding a minus sign: 
+
+```{r}
+plot( res$log2FoldChange,  -log(res$padj), 
+      xlab="Log2(FoldChange)",
+      ylab="-Log(P-value)")
+```
+
+Now lets make this plot more useful (add some guidelines (with the abline() function) and color (with a custom color vector) highlighting genes that have padj<0.05 and the absolute log2FoldChange>2):
+
+```{r}
+plot( res$log2FoldChange,  -log(res$padj), 
+ ylab="-Log(P-value)", xlab="Log2(FoldChange)")
+
+# Add some cut-off lines
+abline(v=c(-2,2), col="darkgray", lty=2)
+abline(h=-log(0.05), col="darkgray", lty=2)
+```
+
+**Finally let's add some color to this plot to draw attention to the genes (i.e. points) we care about - that is those with large fold-change and low p-values (i.e. high -log(p-values))**
+
+To color the points we will setup a custom color vector indicating transcripts with large fold change and significant differences between conditions:
+
+```{r}
+# Setup our custom point color vector 
+mycols <- rep("gray", nrow(res))
+mycols[ abs(res$log2FoldChange) > 2 ]  <- "red" 
+
+inds <- (res$padj < 0.01) & (abs(res$log2FoldChange) > 2 )
+mycols[ inds ] <- "blue"
+
+# Volcano plot with custom colors 
+plot( res$log2FoldChange,  -log(res$padj), 
+ col=mycols, ylab="-Log(P-value)", xlab="Log2(FoldChange)" )
+
+# Cut-off lines
+abline(v=c(-2,2), col="gray", lty=2)
+abline(h=-log(0.1), col="gray", lty=2)
+```
+
+NEXT CLASS 11/18: For even more customization you might find the EnhancedVolcano bioconductor package useful (Note. It uses ggplot under the hood):
+
+First we will add the more understandable gene symbol names to our full results object res as we will use this to label the most interesting genes in our final plot.
+
+```{r}
+#BiocManager::install("EnhancedVolcano") 
+
+#^ installed but we haven't added gene symbols yet so we'll get back to this next class
+
+library(EnhancedVolcano)
+
+```
+
+
+
+
+
+
+
+
