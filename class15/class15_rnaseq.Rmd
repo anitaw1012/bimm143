@@ -2,7 +2,9 @@
 title: "Class 15 Transcriptomics and the analysis of RNA-Seq data"
 author: 'Anita Wang (PID: A15567878)'
 date: "11/16/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 #Background 
@@ -257,6 +259,108 @@ res05 <- results(dds, alpha=0.05)
 summary(res05)
 ```
 
+#5. Adding annotation data for our genes 
+
+Our result table so far only contains the Ensembl gene IDs. However, alternative gene names and extra annotation are usually required for informative interpretation of our results. In this section we will add this necessary annotation data to our results.
+
+For this, we need two bioconductor packages:
+
+```{r}
+#First, install packages
+#BiocManager::install("AnnotationDbi")
+#BiocManager::install("org.Hs.eg.db")
+
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+```
+
+Let's then get a list of all available key types that we can use to map between:
+
+```{r}
+columns(org.Hs.eg.db)
+```
+
+We can then use the mapIds() function to add individual columns to our results table:
+
+We provide the row names of our results table as a key, and specify that keytype=ENSEMBL. The column argument tells the mapIds() function which information we want, and the multiVals argument tells the function what to do if there are multiple possible values for a single input value. Here we ask to just give us back the first one that occurs in the database.
+
+
+```{r}
+res$symbol <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), # Our genenames
+                     keytype="ENSEMBL",   # The format of our genenames
+                     column="SYMBOL",     # The new format we want to add
+                     multiVals="first")
+
+```
+
+```{r}
+head(res)
+
+```
+
+>Q11. Run the mapIds() function two more times to add the Entrez ID and UniProt accession and GENENAME as new columns called res$entrez, res$uniprot and res$genename.
+
+```{r}
+res$entrez <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), 
+                     keytype="ENSEMBL",       
+                     column="ENTREZID",         
+                     multiVals="first")
+```
+
+```{r}
+res$uniprot <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), 
+                     keytype="ENSEMBL",       
+                     column="UNIPROT",         
+                     multiVals="first")
+```
+
+```{r}
+res$genename <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), 
+                     keytype="ENSEMBL",       
+                     column="GENENAME",         
+                     multiVals="first")
+```
+
+```{r}
+head(res)
+```
+
+You can arrange and view the results by the adjusted p-value:
+
+```{r}
+ord <- order( res$padj )
+#View(res[ord,])
+head(res[ord,])
+```
+
+Finally, let's write out the ordered significant results with annotations:
+
+```{r}
+write.csv(res[ord,], "deseq_results.csv")
+
+```
+
+#Save our results
+
+Write out whole results dataset (including genes that don't change significantly)
+
+```{r}
+write.csv(res, file = "allmyresults.csv")
+```
+
+Setting a cutoff for alpha:
+
+Focus in on those genes with a small p-value (i.e. show a significant change):
+
+```{r}
+res05 <- results(dds, alpha = 0.05)
+summary(res05)
+```
+
 
 #6. Data Visualization
 
@@ -322,6 +426,10 @@ NEXT CLASS 11/18: For even more customization you might find the EnhancedVolcano
 
 First we will add the more understandable gene symbol names to our full results object res as we will use this to label the most interesting genes in our final plot.
 
+11/18: We've added gene labels. Now let's make another volcano plot with some gene labels 
+
+For this we can use the *EnhancedVolcano* package:  
+
 ```{r}
 #BiocManager::install("EnhancedVolcano") 
 
@@ -331,10 +439,94 @@ library(EnhancedVolcano)
 
 ```
 
+Now plot:
+
+```{r}
+x <- as.data.frame(res)
+
+EnhancedVolcano(x,
+    lab = x$symbol,
+    x = 'log2FoldChange',
+    y = 'pvalue')
+```
+
+#7. Pathway Analysis
+
+Now we will find out how to derive biological (and hopefully) mechanistic insight from the subset of our most interesting genes highlighted in these types of plots: 
+
+Pathway analysis (also known as gene set analysis or over-representation analysis), aims to reduce the complexity of interpreting gene lists via mapping the listed genes to known (i.e. annotated) biological pathways, processes and functions.
 
 
+*Pathway analysis with R and Bioconductor*
+
+In this analysis, we check for coordinated differential expression over gene sets from KEGG pathways instead of changes of individual genes. The assumption here is that consistent perturbations over a given pathway (gene set) may suggest mechanistic changes.
+
+Once we have a list of enriched pathways from gage we will use the pathview package to draw pathway diagrams, coloring the molecules in the pathway by their degree of up/down-regulation.
+
+First do a one time install of these required bioconductor packages:
+
+```{r}
+# Run in your R console (i.e. not your Rmarkdown doc!)
+#BiocManager::install( c("pathview", "gage", "gageData") )
+```
+
+```{r}
+library(pathview)
+library(gage)
+library(gageData)
+
+data(kegg.sets.hs)
+
+# Examine the first 2 pathways in this kegg set for humans
+head(kegg.sets.hs, 2)
+```
+
+The main **gage()** function requires a named vector of fold changes, where the names of the values are the Entrez gene IDs
+
+```{r}
+foldchanges = res$log2FoldChange
+names(foldchanges) = res$entrez
+head(foldchanges)
+```
+
+Now, let’s run the gage pathway analysis.:
+
+```{r}
+# Get the results
+keggres = gage(foldchanges, gsets=kegg.sets.hs)
+```
+
+Now lets look at the object returned from gage():
+
+```{r}
+attributes(keggres)
+
+```
 
 
+This separates out results by "greater" and "less" i.e. those that are up-regulated and those that are down-regulated.
+
+Lets look at the first few down (less) pathway results:
+
+```{r}
+# Look at the first three down (less) pathways
+head(keggres$less, 3)
+```
+
+Now, let’s try out the pathview() function from the pathview package to make a pathway plot with our RNA-Seq expression results shown in color:
+
+```{r}
+pathview(gene.data=foldchanges, pathway.id="hsa05310")
+```
+
+![](hsa05310.pathview.png)
+
+You can play with the other input arguments to pathview() to change the display in various ways including generating a PDF graph. For example:
+
+```{r}
+# A different PDF based output of the same data
+pathview(gene.data=foldchanges, pathway.id="hsa05310", kegg.native=FALSE)
+```
 
 
 
