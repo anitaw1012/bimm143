@@ -2,7 +2,9 @@
 title: 'Class 17: Vaccination rate mini project'
 author: 'Anita Wang (PID: A15567878)'
 date: "11/23/2021"
-output: html_document
+output:
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 #Getting Started
