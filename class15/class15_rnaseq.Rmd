@@ -528,5 +528,22 @@ You can play with the other input arguments to pathview() to change the display 
 pathview(gene.data=foldchanges, pathway.id="hsa05310", kegg.native=FALSE)
 ```
 
+>Q12. Can you do the same procedure as above to plot the pathview figures for the top 2 down-reguled pathways?
 
+```{r}
+# Look at the first two down-regulated pathways
+head(keggres$less, 2)
+```
+
+```{r}
+pathview(gene.data=foldchanges, pathway.id="hsa04940")
+```
+
+![](hsa04940.pathview.png)
+
+```{r}
+pathview(gene.data=foldchanges, pathway.id="hsa05332")
+```
+
+![](hsa05332.pathview.png)
 
