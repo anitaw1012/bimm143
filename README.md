@@ -9,5 +9,9 @@ Halloween Mini Project [source](https://github.com/anitaw1012/bimm143/blob/main/
 
 Class 06 - R Functions Lab [source](https://github.com/anitaw1012/bimm143/blob/main/class06/class06_R_Functions_Lab.Rmd)
 
+Class 08 - Machine Learning 1 [source](https://github.com/anitaw1012/bimm143/blob/main/class08/class08.Rmd)
+
+
+
 
 
